@@ -9,6 +9,22 @@ from tqdm import tqdm, trange
 import math
 import numpy as np
 
+
+def get_positional_embeddings(batch_size, sequence_length, d, device):
+    # Create a position tensor [sequence_length, 1]
+    position = torch.arange(sequence_length).unsqueeze(1).float()
+    # Create a divisor tensor for sine and cosine [1, d // 2] based on the formula
+    div_term = torch.exp(torch.arange(0, d, 2).float() * (-math.log(10000.0) / d))
+    
+    # Initialize embeddings with batch and sequence dimensions
+    pos_embedding = torch.zeros(batch_size, sequence_length, d)
+    
+    # Apply sine to even indices and cosine to odd indices
+    pos_embedding[:, :, 0::2] = torch.sin(position * div_term)  # even indices
+    pos_embedding[:, :, 1::2] = torch.cos(position * div_term)  # odd indices
+    
+    return pos_embedding.to(device)
+
 class PatchEncoder(nn.Module):
     def __init__(self, config):
         super(PatchEncoder, self).__init__()
@@ -20,7 +36,6 @@ class PatchEncoder(nn.Module):
         self.cls_token = nn.Parameter(torch.randn(1, 1, self.encoding_size))
         self.n_patches = (self.img_dim//self.patch_size)**2
         self.encoder = nn.Conv2d(config['channels'], self.encoding_size, kernel_size=self.patch_size, stride=self.patch_size)
-        self.pos_encoder = nn.Parameter(torch.randn(1, self.n_patches + 1, self.encoding_size))
         self.dropout_layer = nn.Dropout(self.dropout)
         
     def forward(self, x):
@@ -29,9 +44,12 @@ class PatchEncoder(nn.Module):
         out = out.flatten(-2).transpose(-1, -2)
         out = torch.cat((cls_token, out), dim = 1)
 #         print(out.shape, self.pos_encoder.shape)
-        out = out + self.pos_encoder
+        pos_enc = get_positional_embeddings(out.shape[0], out.shape[1], out.shape[2], device=x.device)
+        out = out + pos_enc 
         return self.dropout_layer(out)
         
+
+
 
 class MultiHeadAttention(nn.Module):
     def __init__(self, config):
