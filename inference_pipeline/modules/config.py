@@ -7,8 +7,9 @@ rcnn_path = "place/holder/for/rcnn"
 vit_path = "place/holder/for/vit"
 
 # test path
-label_path = "validation_set/localization/labels"
-images_path = "validation_set/localization/images"
+# Path to the COCO annotation file
+annotation_file = "validation_set/localization/coco_annotation/COCO_fracture_masks.json"
+images_path = "validation_set/localization/COCO_images"
 
 classification_test_data = "validation_set/classification/Images"
 

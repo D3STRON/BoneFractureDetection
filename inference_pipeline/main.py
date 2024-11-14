@@ -7,13 +7,13 @@ if __name__ == "__main__":
     if not os.path.exists(config.images_path):
         print(f"Error: Images path {config.images_path} does not exist")
         exit(1)
-    if not os.path.exists(config.label_path):
+    if not os.path.exists(config.annotation_file):
         print(f"Error: Labels path {config.label_path} does not exist")
         exit(1)
         
     # Specify the models you want to run 
     # NOTE: pipeline is configured to run localization tasks only or classification tasks only not both.
-    models_to_run = ["yolo", "rcnn"]
+    models_to_run = ["yolo", "rcnn", "resnet"]
 
     # specify mode
     mode = config.task
@@ -30,9 +30,18 @@ if __name__ == "__main__":
             print(f"\nModel: {model_name}")
             if task_type == "object_detection":
                 print("Task Type: Object Detection")
-                print(f"mAP: {metrics['mAP']}")
-                print(f"Average Precision: {metrics['average_precision']}")
-                print(f"Average Recall: {metrics['average_recall']}")
+                print(f"mAP@IoU=0.50:0.95: {metrics['mAP']:.4f}")
+                print(f"mAP@IoU=0.50: {metrics['mAP_50']:.4f}")
+                print(f"mAP@IoU=0.75: {metrics['mAP_75']:.4f}")
+                print(f"AP (Small): {metrics['AP_small']:.4f}")
+                print(f"AP (Medium): {metrics['AP_medium']:.4f}")
+                print(f"AP (Large): {metrics['AP_large']:.4f}")
+                print(f"AR@1: {metrics['AR_1']:.4f}")
+                print(f"AR@10: {metrics['AR_10']:.4f}")
+                print(f"AR@100: {metrics['AR_100']:.4f}")
+                print(f"AR (Small): {metrics['AR_small']:.4f}")
+                print(f"AR (Medium): {metrics['AR_medium']:.4f}")
+                print(f"AR (Large): {metrics['AR_large']:.4f}")
             elif task_type == "classification":
                 print("Task Type: Classification")
                 print(f"Accuracy: {metrics['accuracy']}")
