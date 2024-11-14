@@ -4,6 +4,8 @@ import torch
 import torch.nn as nn
 import torchvision.models as models
 
+from pycocotools.coco import COCO
+from pycocotools.cocoeval import COCOeval
 from pathlib import Path
 from ultralytics import YOLO
 from modules import config
@@ -18,14 +20,14 @@ def run_inference(models_to_run, mode):
     results = {}
 
     if mode == "localization":
-        # Load ground truth boxes
-        ground_truth_boxes = function.load_ground_truth_boxes(config.label_path)
-        if not ground_truth_boxes:
-            print("Error: No ground truth boxes loaded")
-            return None
-    
+        # Load COCO ground truth annotations
+        coco_gt = COCO(config.annotation_file)
+        imgIds = coco_gt.getImgIds()
+        imgs = coco_gt.loadImgs(imgIds)
+        filename_to_imgId = {img['file_name']: img['id'] for img in imgs}
+        
         for model_name in models_to_run:
-            predictions = {}
+            predictions = []
             print(f"\nRunning inference for {model_name}...")
             
             if model_name == "yolo":
@@ -45,112 +47,72 @@ def run_inference(models_to_run, mode):
                 print(f"Processing {len(image_files)} images...")
                 
                 for image_file in image_files:
-                    img_id = image_file.stem
+                    img_filename = image_file.name
+                    if img_filename not in filename_to_imgId:
+                        print(f"Warning: Image {img_filename} not found in COCO annotations")
+                        continue
+
+                    img_id = filename_to_imgId[img_filename]
                     try:
                         result = model.predict(source=str(image_file), save=False, conf=0.5)[0]
-                        pred_boxes = []
-                        
                         for i in range(len(result.boxes.cls)):
-                            class_id = int(result.boxes.cls[i].item())
+                            class_id_model = int(result.boxes.cls[i].item())
+                            
+                            # Map model class IDs to COCO category IDs if necessary
+                            # For example, if class IDs are off by 1
+                            class_id = class_id_model + 1  # Adjust based on your dataset
+
                             conf = float(result.boxes.conf[i].item())
                             x_min, y_min, x_max, y_max = result.boxes.xyxy[i].tolist()
-                            pred_boxes.append([class_id, x_min, y_min, x_max, y_max, conf])
-                        
-                        predictions[img_id] = pred_boxes
-                        
+                            width = x_max - x_min
+                            height = y_max - y_min
+                            pred_dict = {
+                                'image_id': img_id,
+                                'category_id': class_id,
+                                'bbox': [x_min, y_min, width, height],
+                                'score': conf
+                            }
+                            predictions.append(pred_dict)
                     except Exception as e:
                         print(f"Error processing image {image_file}: {str(e)}")
                         continue
                 
-                print(f"Processed {len(predictions)} images successfully")
-                
-                # Evaluate predictions
-                precision, recall, ap = function.evaluate_detections(predictions, ground_truth_boxes)
-                if precision is not None and recall is not None:
-                    avg_precision = np.mean(precision)
-                    avg_recall = np.mean(recall)
-                    print(f"\n{model_name.upper()} Evaluation Results:")
-                    print(f"Average Precision: {avg_precision:.4f}")
-                    print(f"Average Recall: {avg_recall:.4f}")
-                    print(f"mAP: {ap:.4f}")
-                    
-                    results[model_name] = {
+                print(f"Processed {len(predictions)} predictions successfully")
+
+                # Evaluate predictions using COCOeval
+                coco_dt = coco_gt.loadRes(predictions)
+                cocoEval = COCOeval(coco_gt, coco_dt, iouType='bbox')
+                cocoEval.evaluate()
+                cocoEval.accumulate()
+                cocoEval.summarize()
+
+                # Extract metrics
+                metrics = {
+                    'mAP': cocoEval.stats[0],       # mAP @ IoU=0.50:0.95
+                    'mAP_50': cocoEval.stats[1],    # mAP @ IoU=0.50
+                    'mAP_75': cocoEval.stats[2],    # mAP @ IoU=0.75
+                    'AP_small': cocoEval.stats[3],
+                    'AP_medium': cocoEval.stats[4],
+                    'AP_large': cocoEval.stats[5],
+                    'AR_1': cocoEval.stats[6],
+                    'AR_10': cocoEval.stats[7],
+                    'AR_100': cocoEval.stats[8],
+                    'AR_small': cocoEval.stats[9],
+                    'AR_medium': cocoEval.stats[10],
+                    'AR_large': cocoEval.stats[11]
+                }
+
+                results[model_name] = {
                     'task_type': 'object_detection',
                     'predictions': predictions,
-                    'metrics': {
-                        'average_precision': np.mean(precision) if precision is not None else None,
-                        'average_recall': np.mean(recall) if recall is not None else None,
-                        'mAP': ap if ap is not None else None,
-                        'accuracy': None,
-                        'precision': None,
-                        'recall': None,
-                        'f1_score': None,
-                        'confusion_matrix': None
-                    }
+                    'metrics': metrics
                 }
-                else:
-                    print(f"Evaluation failed for {model_name}")
 
             elif model_name == "rcnn":
-                # Placeholder for RCNN model loading and inference
+                # Placeholder for RCNN model
                 print("Loading RCNN model...")
-                model = None  # Placeholder for actual RCNN model loading
-                
-                # Placeholder check for image path existence
-                if not os.path.exists(config.images_path):
-                    print(f"Error: Images path {config.images_path} does not exist")
-                    continue
-                
-                # Run inference on validation images (Placeholder)
-                image_files = list(Path(config.images_path).glob('*.jpg'))
-                if not image_files:
-                    print(f"Error: No jpg images found in {config.images_path}")
-                    continue
-
-                print(f"Processing {len(image_files)} images with RCNN (placeholder)...")
-                
-                # Placeholder for RCNN inference (populate `pred_boxes` similar to YOLO format)
-                for image_file in image_files:
-                    img_id = image_file.stem
-                    try:
-                        # Placeholder inference result
-                        pred_boxes = [
-                            # Example box format: [class_id, x_min, y_min, x_max, y_max, conf]
-                            [0, 100, 150, 200, 250, 0.9]  # Example prediction
-                        ]
-                        predictions[img_id] = pred_boxes
-                        
-                    except Exception as e:
-                        print(f"Error processing image {image_file}: {str(e)}")
-                        continue
-                
-                print(f"Processed {len(predictions)} images successfully with RCNN placeholder")
-
-                precision, recall, ap = function.evaluate_detections(predictions, ground_truth_boxes)
-                if precision is not None and recall is not None:
-                    avg_precision = np.mean(precision)
-                    avg_recall = np.mean(recall)
-                    print(f"\n{model_name.upper()} Evaluation Results:")
-                    print(f"Average Precision: {avg_precision:.4f}")
-                    print(f"Average Recall: {avg_recall:.4f}")
-                    print(f"mAP: {ap:.4f}")
-                    
-                    results[model_name] = {
-                    'task_type': 'object_detection',
-                    'predictions': predictions,
-                    'metrics': {
-                        'average_precision': np.mean(precision) if precision is not None else None,
-                        'average_recall': np.mean(recall) if recall is not None else None,
-                        'mAP': ap if ap is not None else None,
-                        'accuracy': None,
-                        'precision': None,
-                        'recall': None,
-                        'f1_score': None,
-                        'confusion_matrix': None
-                    }
-                }
-                else:
-                    print(f"Evaluation failed for {model_name}")
+                # Implement RCNN inference similar to YOLO
+                pass
 
     
     else:
