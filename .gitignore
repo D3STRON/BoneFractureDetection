@@ -1,0 +1,5 @@
+
+*.pyc
+*.jpg
+inference_pipeline/modules/models/yolo/best.pt
+*.json
