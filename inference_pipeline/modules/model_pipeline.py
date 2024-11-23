@@ -10,13 +10,17 @@ from pathlib import Path
 from ultralytics import YOLO
 from modules import config
 from modules import function
+from transformers import DetrForObjectDetection, DetrImageProcessor
+from torch.utils.data import DataLoader
+import cv2
+from tqdm.auto import tqdm
 # from sklearn.metrics import precision_recall_curve, average_precision_score
-
 
 
 def run_inference(models_to_run, mode):
     """Run inference and evaluation for specified models."""
-
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"device Found: {device}")
     results = {}
 
     if mode == "localization":
@@ -27,24 +31,24 @@ def run_inference(models_to_run, mode):
         filename_to_imgId = {img['file_name']: img['id'] for img in imgs}
         
         for model_name in models_to_run:
-            predictions = []
             print(f"\nRunning inference for {model_name}...")
-            
-            if model_name == "yolo":
-                model = YOLO(config.yolo_path)
+            # Check if images path exists
+            if not os.path.exists(config.images_path):
+                print(f"Error: Images path {config.images_path} does not exist")
+                continue
                 
-                # Check if images path exists
-                if not os.path.exists(config.images_path):
-                    print(f"Error: Images path {config.images_path} does not exist")
-                    continue
-                    
-                # Run inference on validation images
-                image_files = list(Path(config.images_path).glob('*.jpg'))
-                if not image_files:
-                    print(f"Error: No jpg images found in {config.images_path}")
-                    continue
-                    
-                print(f"Processing {len(image_files)} images...")
+            # Run inference on validation images
+            image_files = list(Path(config.images_path).glob('*.jpg'))
+            if not image_files:
+                print(f"Error: No jpg images found in {config.images_path}")
+                continue
+                
+            print(f"Processing {len(image_files)} images...")
+
+
+            if model_name == "yolo":
+                predictions = []
+                model = YOLO(config.yolo_path)
                 
                 for image_file in image_files:
                     img_filename = image_file.name
@@ -114,6 +118,81 @@ def run_inference(models_to_run, mode):
                 # Implement RCNN inference similar to YOLO
                 pass
 
+            elif model_name == "detr":
+                processor = DetrImageProcessor.from_pretrained("D3STRON/bone-fracture-detr")
+                model = DetrForObjectDetection.from_pretrained("D3STRON/bone-fracture-detr")
+                model.to(device)
+                print("Model Loaded from HF")
+                # Collate function to preprocess images
+                def preprocess_batch(batch):
+                    file_paths = [f"{config.images_path}/{image['file_name']}" for image in batch]
+                    images = [cv2.imread(file_path) for file_path in file_paths]
+                    encodings = processor(images=images, return_tensors="pt").to(device)
+                    return encodings, batch
+
+
+                
+                data_loader = DataLoader(imgs, collate_fn=preprocess_batch, batch_size=4)
+                
+
+                # Inference and predictions
+                predictions = []
+
+                for batch_data, batch_info in tqdm(data_loader, desc="Processing Batches"):
+                    with torch.no_grad():
+                        model_outputs = model(**batch_data)
+
+                    # Retrieve original image dimensions (height, width)
+                    original_sizes = torch.tensor(
+                        [(image_info['height'], image_info['width']) for image_info in batch_info], dtype=torch.float32
+                    )
+
+                    # Post-process model outputs
+                    processed_results = processor.post_process_object_detection(
+                        model_outputs, target_sizes=original_sizes, threshold=0
+                    )
+
+                    # Build predictions in COCO format
+                    for image_info, result in zip(batch_info, processed_results):
+                        for box, score in zip(result['boxes'], result['scores']):
+                            x_min, y_min, x_max, y_max = box.tolist()
+                            predictions.append({
+                                'image_id': image_info['id'],  # COCO image ID
+                                'category_id': 1,             # Assuming category_id = 1
+                                'bbox': [x_min, y_min, x_max - x_min, y_max - y_min],  # [x, y, width, height]
+                                'score': score.item()         # Convert score to float
+                            })
+
+                # Evaluate using COCO API
+                coco_dt = coco_gt.loadRes(predictions)
+                coco_eval = COCOeval(coco_gt, coco_dt, iouType='bbox')
+                coco_eval.evaluate()
+                coco_eval.accumulate()
+                coco_eval.summarize()
+
+                # Extract COCO metrics
+                metrics = {
+                    'mAP': coco_eval.stats[0],       # mAP @ IoU=0.50:0.95
+                    'mAP_50': coco_eval.stats[1],    # mAP @ IoU=0.50
+                    'mAP_75': coco_eval.stats[2],    # mAP @ IoU=0.75
+                    'AP_small': coco_eval.stats[3],  # mAP for small objects
+                    'AP_medium': coco_eval.stats[4], # mAP for medium objects
+                    'AP_large': coco_eval.stats[5],  # mAP for large objects
+                    'AR_1': coco_eval.stats[6],      # AR with 1 detection per image
+                    'AR_10': coco_eval.stats[7],     # AR with 10 detections per image
+                    'AR_100': coco_eval.stats[8],    # AR with 100 detections per image
+                    'AR_small': coco_eval.stats[9],  # AR for small objects
+                    'AR_medium': coco_eval.stats[10],# AR for medium objects
+                    'AR_large': coco_eval.stats[11]  # AR for large objects
+                }
+
+                results[model_name] = {
+                    'task_type': 'object_detection',
+                    'predictions': predictions,
+                    'metrics': metrics
+                }
+
+                
     
     else:
         
@@ -125,7 +204,6 @@ def run_inference(models_to_run, mode):
                 num_features = model.fc.in_features
                 model.fc = nn.Linear(num_features, 2)  # Binary classification output
                 model.load_state_dict(torch.load(resnet_model_path))
-                device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
                 model = model.to(device)
 
                 # load the data for classification evaluation

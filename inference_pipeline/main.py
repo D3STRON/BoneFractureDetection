@@ -8,12 +8,12 @@ if __name__ == "__main__":
         print(f"Error: Images path {config.images_path} does not exist")
         exit(1)
     if not os.path.exists(config.annotation_file):
-        print(f"Error: Labels path {config.label_path} does not exist")
+        print(f"Error: Labels path {config.annotation_file} does not exist")
         exit(1)
         
     # Specify the models you want to run 
     # NOTE: pipeline is configured to run localization tasks only or classification tasks only not both.
-    models_to_run = ["yolo", "rcnn", "resnet"]
+    models_to_run = ['detr']
 
     # specify mode
     mode = config.task

@@ -33,8 +33,6 @@ seaborn==0.13.2
 six==1.16.0
 sympy==1.13.1
 threadpoolctl==3.5.0
-torch==2.5.1
-torchvision==0.20.1
 tqdm==4.67.0
 typing_extensions==4.12.2
 tzdata==2024.2
@@ -42,3 +40,6 @@ ultralytics==8.3.35
 ultralytics-thop==2.0.12
 urllib3==2.2.3
 zipp==3.21.0
+transformers
+accelerate
+timm
