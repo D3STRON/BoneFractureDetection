@@ -12,7 +12,7 @@ detr_path = './modules/models/detr/epoch=22-step=14835.ckpt'
 annotation_file = "validation_set/localization/coco_annotation/_annotations.coco.json"
 images_path = "validation_set/localization/images"
 
-classification_test_data = "/validation_set/classification/images"
+classification_test_data = "validation_set/classification/valid_compiled.csv"
 
 # configure task
 task = "localization"
