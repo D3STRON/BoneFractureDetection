@@ -10,7 +10,7 @@ detr_path = './modules/models/detr/epoch=22-step=14835.ckpt'
 # test path
 # Path to the COCO annotation file
 annotation_file = "validation_set/localization/coco_annotation/_annotations.coco.json"
-images_path = "validation_set/localization/images"
+images_path = "validation_set/localization/COCO_images"
 
 classification_test_data = "validation_set/classification/valid_compiled.csv"
 
