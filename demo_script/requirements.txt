@@ -74,5 +74,3 @@ ultralytics-thop==2.0.13
 urllib3==2.2.3
 wcwidth @ file:///home/conda/feedstock_root/build_artifacts/wcwidth_1704731205417/work
 zipp==3.20.2
-jupyter
-IPykernel
