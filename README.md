@@ -16,3 +16,7 @@ https://www.kaggle.com/datasets/cjinny/mura-v11/data
 `pip install -r requirements.txt`
 
 `pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121`
+
+# Demo of all Models 
+Are available in the demo Script Folder
+`pip install -r requirements.txt`
