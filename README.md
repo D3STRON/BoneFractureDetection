@@ -22,8 +22,8 @@ Are available in the demo Script Folder
 `pip install -r requirements.txt`
 
 # Some important links
-Dataset for localization: https://www.kaggle.com/datasets/d3stron/augmented-fracture-data
-Dataset for classification: https://www.kaggle.com/datasets/cjinny/mura-v11
-Trained ViT model: https://huggingface.co/D3STRON/bone_fracture_vit
-Trained Detr model: https://huggingface.co/D3STRON/bone-fracture-detr
-Training and Evaluation Pipelines: https://github.com/D3STRON/BoneFractureDetection
+* Dataset for localization: https://www.kaggle.com/datasets/d3stron/augmented-fracture-data
+* Dataset for classification: https://www.kaggle.com/datasets/cjinny/mura-v11
+* Trained ViT model: https://huggingface.co/D3STRON/bone_fracture_vit
+* Trained Detr model: https://huggingface.co/D3STRON/bone-fracture-detr
+* Training and Evaluation Pipelines: https://github.com/D3STRON/BoneFractureDetection
