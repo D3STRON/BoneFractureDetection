@@ -11,9 +11,9 @@
 ### 1. Download Pre-trained Model Weights
 Download the model weight files from the links below and place them in their respective folders under `modules/models`:
 
-- **ResNet:** [Download Here](https://northeastern-my.sharepoint.com/:u:/g/personal/murali_ak_northeastern_edu/EQiETBuafthHq-wMQlSkdQUBbtCSB6KC2F4rVM9CSSfa9Q?e=qt3Aj4)  
-- **VGG:** [Download Here](https://northeastern-my.sharepoint.com/:u:/g/personal/murali_ak_northeastern_edu/ESBqfFo9cUFFu1l42_KYwVsBWH1NxkI61KEl35I_79YO-Q?e=hbQkVA)  
-- **YOLO:** [Download Here](https://northeastern-my.sharepoint.com/:u:/g/personal/murali_ak_northeastern_edu/EfWwlE6LxDdAtT0syOiQmJYBGm8EwX5GPIjLOjEr_Chwmg?e=CcRDyT)  
+- **ResNet:** [Download Here]([https://northeastern-my.sharepoint.com/:u:/g/personal/murali_ak_northeastern_edu/EQiETBuafthHq-wMQlSkdQUBbtCSB6KC2F4rVM9CSSfa9Q?e=qt3Aj4](https://drive.google.com/drive/folders/1pl2x9DdscfTfx4Iwfbbyg79_oQol_8A7?usp=sharing))  
+- **VGG:** [Download Here]([https://northeastern-my.sharepoint.com/:u:/g/personal/murali_ak_northeastern_edu/ESBqfFo9cUFFu1l42_KYwVsBWH1NxkI61KEl35I_79YO-Q?e=hbQkVA](https://drive.google.com/drive/folders/1pl2x9DdscfTfx4Iwfbbyg79_oQol_8A7?usp=sharing))  
+- **YOLO:** [Download Here]([https://northeastern-my.sharepoint.com/:u:/g/personal/murali_ak_northeastern_edu/EfWwlE6LxDdAtT0syOiQmJYBGm8EwX5GPIjLOjEr_Chwmg?e=CcRDyT](https://drive.google.com/drive/folders/1pl2x9DdscfTfx4Iwfbbyg79_oQol_8A7?usp=sharing))  
 
 ---
 
